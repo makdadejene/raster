@@ -1,38 +1,73 @@
 open Core
 
 (* This should look familiar by now! *)
-let transform image = 
-
-
-Image.foldi image ~init:image ~f:(fun ~x ~y (r,g,b) ->
-  let max = Image.max_val image in
- let val = (Int.of_float r)/.(Int.of_float max) in
- if(val > 0.5 ) then 
- (let error = Int.of_float val-1.0)
- val = 1.0 
-else 
-  (let error = Int.of_float val-0.5)
- val = 0.5
-
- let seven = Int.of_float error*(7/16) in
- let three = Int.of_float error*(3/16) in
- let five = Int.of_float error*(5/16) in
- let one = Int.of_float error*(1/16) in
-
-  let right = Image.set ~x: x + 1 ~y:y image (seven, seven, seven) 
-  let diag_left = Image.set ~x: x -1 ~y:y-1 image (three, three, three)
-  let bottom = Image.set ~x: x ~y;y-1 image (five, five, five)
-  let diag_right = Image.set ~x:x+1 ~y:y-1 image (one, one, one)
-
-    
-
-)
+let transform image =
+  let curr_image = Grayscale.transform image in
+  Image.foldi
+    curr_image
+    ~init:curr_image
+    ~f:(fun ~x ~y curr_image (r, _g, _b) ->
+    let max = Image.max_val curr_image in
+    let ratio = Int.to_float r /. Int.to_float max in
+    let error =
+      if Float.compare ratio 0.5 > 0
+      then (
+        Image.set ~x ~y curr_image (max, max, max);
+        ratio -. 1.0)
+      else (
+        Image.set ~x ~y curr_image (0, 0, 0);
+        ratio)
+    in
+    let () =
+      match Image.get curr_image ~x:(x + 1) ~y with
+      | exception _ -> ()
+      | _ ->
+        let right =
+          Pixel.red (Image.get curr_image ~x:(x + 1) ~y)
+          + Float.to_int (error *. (7.0 /. 16.0) *. Int.to_float max)
+        in
+        Image.set curr_image ~x:(x + 1) ~y (right, right, right)
+    in
+    let () =
+      match Image.get curr_image ~x:(x - 1) ~y:(y + 1) with
+      | exception _ -> ()
+      | _ ->
+        let down_diag =
+          Pixel.red (Image.get curr_image ~x:(x - 1) ~y:(y + 1))
+          + Float.to_int (error *. (3.0 /. 16.0) *. Int.to_float max)
+        in
+        Image.set
+          curr_image
+          ~x:(x - 1)
+          ~y:(y + 1)
+          (down_diag, down_diag, down_diag)
+    in
+    let () =
+      match Image.get curr_image ~x ~y:(y + 1) with
+      | exception _ -> ()
+      | _ ->
+        let below =
+          Pixel.red (Image.get curr_image ~x ~y:(y + 1))
+          + Float.to_int (error *. (5.0 /. 16.0) *. Int.to_float max)
+        in
+        Image.set curr_image ~x ~y:(y + 1) (below, below, below)
+    in
+    let () =
+      match Image.get curr_image ~x:(x + 1) ~y:(y + 1) with
+      | exception _ -> ()
+      | _ ->
+        let down_right =
+          Pixel.red (Image.get curr_image ~x:(x + 1) ~y:(y + 1))
+          + Float.to_int (error *. (1.0 /. 16.0) *. Int.to_float max)
+        in
+        Image.set
+          curr_image
+          ~x:(x + 1)
+          ~y:(y + 1)
+          (down_right, down_right, down_right)
+    in
+    curr_image)
 ;;
-
-
-
-
-
 
 let command =
   Command.basic
@@ -48,5 +83,6 @@ let command =
         let image = Image.load_ppm ~filename |> transform in
         Image.save_ppm
           image
-          ~filename:(String.chop_suffix_exn filename ~suffix:".ppm" ^ "_dither.ppm")]
+          ~filename:
+            (String.chop_suffix_exn filename ~suffix:".ppm" ^ "_dither.ppm")]
 ;;
