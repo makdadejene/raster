@@ -8,5 +8,7 @@ let command =
     ; "blur", Blur.command
     ; "dither", Dither.command
     ; "steganography", Steganography.command
+    ; "solarize", Solarize.command
+    ; "edge detection", Edge_detection.command
     ]
 ;;

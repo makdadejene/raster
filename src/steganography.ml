@@ -2,14 +2,10 @@ open! Core
 
 let transform image =
   Image.map image ~f:(fun (r, g, b) ->
-    let red = r % 4 * 64 in
-    let green = g % 4 * 64 in
-    let blue = b % 4 * 64 in
-    (* let masking = 00000011 in
-
-       let red = Int.shift_left (Int.land masking r) 6 in let green =
-       Int.shift_left (Int.land masking g) 6 in let blue = Int.shift_left
-       (Int.land masking b) 6 in *)
+    let masking = 3 in
+    let red = Int.shift_left (masking land r) 6 in
+    let green = Int.shift_left (masking land g) 6 in
+    let blue = Int.shift_left (masking land b) 6 in
     red, green, blue)
 ;;
 
